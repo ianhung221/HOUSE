@@ -1,0 +1,41 @@
+.viewer3d { position: relative; width: 100%; height: 100%; min-height: 400px; overflow: hidden; background: #e9ede7; isolation: isolate; }
+.viewer3d-canvas { position: absolute; inset: 0; }
+.viewer3d-canvas canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.viewer3d-canvas canvas:focus-visible { outline: 2px solid #a7653c; outline-offset: -3px; }
+.viewer3d--walk .viewer3d-canvas canvas { cursor: grab; }
+.viewer3d--walk .viewer3d-canvas canvas:active { cursor: grabbing; }
+.viewer3d-badges { position: absolute; top: 20px; left: 22px; right: 22px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; pointer-events: none; }
+.viewer3d-mode, .viewer3d-estimate, .viewer3d-landscape { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #ffffffaa; border-radius: 7px; color: #525c50; background: #fafaf4d9; backdrop-filter: blur(12px); font-size: 11px; line-height: 1.5; letter-spacing: .05em; }
+.viewer3d-mode { font-weight: 650; }
+.viewer3d-dot { width: 6px; height: 6px; border-radius: 50%; background: #7b9272; }
+.viewer3d-estimate { color: #777463; font-size: 10px; }
+.viewer3d-orbit-help { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; position: absolute; bottom: 20px; left: 16px; right: 16px; color: #727b6d; font-size: 10px; pointer-events: none; }
+.viewer3d-orbit-help span + span::before { content: '·'; margin-right: 15px; color: #aab1a4; }
+.viewer3d-landscape { position: absolute; left: 22px; top: 67px; font-size: 10px; color: #726c5d; pointer-events: none; }
+.viewer3d-walk-help { position: absolute; bottom: 25px; left: 22px; color: #616b5e; background: #fafaf4df; border-radius: 6px; padding: 8px 12px; font-size: 11px; pointer-events: none; }
+.viewer3d-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffffffc9; font: 300 24px/1 sans-serif; text-shadow: 0 1px 4px #233b3570; pointer-events: none; }
+.viewer3d-movement { position: absolute; bottom: 18px; right: 20px; display: grid; grid-template-columns: repeat(3, 41px); grid-template-rows: repeat(2, 41px); gap: 5px; }
+.viewer3d .viewer3d-step { border: 1px solid #ffffffbf; border-radius: 9px; background: #fafaf4eb; color: #3a4b3c; font: 20px/1 sans-serif; padding: 0; cursor: pointer; touch-action: none; user-select: none; transition: background .15s, transform .15s; box-shadow: 0 2px 8px #48513f0d; }
+.viewer3d .viewer3d-step:hover { background: #fff; }
+.viewer3d .viewer3d-step:active { background: #e0e7d9; transform: scale(.95); }
+.viewer3d-step--forward { grid-column: 2; grid-row: 1; }
+.viewer3d-step--left { grid-column: 1; grid-row: 2; }
+.viewer3d-step--backward { grid-column: 2; grid-row: 2; }
+.viewer3d-step--right { grid-column: 3; grid-row: 2; }
+.viewer3d-notice { position: absolute; bottom: 76px; left: 22px; max-width: calc(100% - 200px); padding: 8px 12px; border-radius: 6px; background: #6f513ce6; color: #fffaf3; font-size: 11px; }
+.viewer3d-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; background: #eceee7; color: #4b5848; }
+.viewer3d-fallback-icon { font-size: 52px; color: #829078; }
+.viewer3d-fallback h3 { margin: 12px 0 8px; font-size: 18px; font-weight: 550; }
+.viewer3d-fallback p { max-width: 330px; margin: 0 0 20px; font-size: 13px; line-height: 1.9; color: #737c6e; }
+.viewer3d-fallback button { padding: 10px 18px; border: 1px solid #7a8970; border-radius: 6px; background: #f9faf5; color: #495b40; cursor: pointer; }
+@media (max-width: 700px) {
+  .viewer3d { min-height: 370px; }
+  .viewer3d-badges { top: 12px; left: 12px; right: 12px; gap: 7px; }
+  .viewer3d-mode, .viewer3d-estimate { padding: 6px 8px; font-size: 9px; }
+  .viewer3d-landscape { top: 53px; left: 12px; padding: 6px 8px; font-size: 9px; }
+  .viewer3d-walk-help { left: 12px; bottom: 115px; font-size: 10px; padding: 7px 9px; }
+  .viewer3d-movement { right: 12px; bottom: 14px; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); }
+  .viewer3d-notice { left: 12px; bottom: 155px; max-width: calc(100% - 24px); }
+  .viewer3d-orbit-help { bottom: 16px; gap: 9px; font-size: 9px; }
+  .viewer3d-orbit-help span + span::before { margin-right: 9px; }
+}

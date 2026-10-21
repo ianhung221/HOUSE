@@ -1,0 +1,114 @@
+.editor2d {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 440px;
+  overflow: hidden;
+  background: #f3f3ec;
+  isolation: isolate;
+}
+
+.plan-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 440px;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.is-dragging .plan-svg,
+.is-dragging .plan-furniture-item { cursor: grabbing; }
+.is-measuring .plan-svg,
+.is-measuring .plan-furniture-item { cursor: crosshair; }
+
+.plan-caption {
+  position: absolute;
+  z-index: 2;
+  top: 26px;
+  left: 28px;
+  display: grid;
+  gap: 7px;
+  pointer-events: none;
+  color: #505b4d;
+}
+
+.plan-caption-kicker { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; color: #7c8273; }
+.plan-caption strong { font-family: Georgia, 'Noto Serif TC', 'PMingLiU', serif; font-size: 19px; font-weight: 500; letter-spacing: 1.5px; }
+.plan-view-tools {
+  position: absolute;
+  top: 24px;
+  right: 25px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #dedfd4;
+  border-radius: 9px;
+  background: #fffef9;
+  box-shadow: 0 3px 12px #333b2910;
+}
+
+.plan-view-tools button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: #5a6554;
+  font-size: 20px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.plan-view-tools button:hover { background: #e8ece1; color: #334d3a; }
+.plan-view-tools button:focus-visible { outline: 2px solid #69836b; outline-offset: 1px; }
+.plan-view-tools .plan-fit-button { width: 45px; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; }
+.plan-tool-divider { height: 17px; width: 1px; margin: 0 3px; background: #e2e4d8; }
+.plan-rooms.has-reference { opacity: 0.42; }
+.plan-room-label { fill: #777d6e; font-family: inherit; letter-spacing: 0.015em; paint-order: stroke; stroke: #f5f3ea; stroke-width: 0.055px; stroke-linejoin: round; }
+.plan-room-label.room-bath { fill: #7b877d; }
+.plan-room-label.room-balcony { fill: #7d8c71; }
+.plan-furniture-item { cursor: move; outline: none; }
+.plan-furniture-shape { filter: drop-shadow(0.015px 0.025px 0.015px #4e51421c); }
+.plan-furniture-hit { stroke: transparent; stroke-width: 0.025px; transition: stroke 120ms ease; }
+.plan-furniture-item:hover .plan-furniture-hit { stroke: #7b92727d; }
+.plan-furniture-item:focus-visible .plan-furniture-hit { stroke: #3c6857; stroke-width: 0.04px; }
+.plan-dimensions text,
+.plan-calibration text { fill: #3c6857; font-family: inherit; font-weight: 650; paint-order: stroke; stroke: #fafbf3; stroke-width: 0.055px; stroke-linejoin: round; }
+.plan-calibration text { fill: #9f5b29; }
+.plan-bottom-bar {
+  position: absolute;
+  z-index: 2;
+  left: 28px;
+  right: 28px;
+  bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+  color: #858a7d;
+  pointer-events: none;
+  font-size: 10px;
+}
+.plan-scale { display: grid; gap: 4px; color: #707969; }
+.plan-scale span { padding-left: 2px; white-space: nowrap; font-size: 10px; letter-spacing: 0.3px; }
+.plan-interaction-hint { padding: 6px 9px; border-radius: 4px; background: #f3f3ecdf; line-height: 1.6; text-align: right; }
+@media (max-width: 700px) {
+  .editor2d, .plan-svg { min-height: 360px; }
+  .plan-caption { left: 16px; top: 18px; gap: 5px; }
+  .plan-caption strong { font-size: 16px; }
+  .plan-caption-kicker { font-size: 8px; }
+  .plan-view-tools { right: 14px; top: 15px; }
+  .plan-view-tools button { width: 36px; height: 36px; }
+  .plan-bottom-bar { left: 16px; right: 16px; bottom: 13px; }
+  .plan-interaction-hint { max-width: 170px; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-view-tools button, .plan-furniture-hit { transition: none; }
+}
