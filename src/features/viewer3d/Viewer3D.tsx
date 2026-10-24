@@ -662,7 +662,7 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
     return cleanup;
     } catch {
       cleanup();
-      setError('3D ???????????????3D ????????? WebGL2??????????');
+      setError('3D 初始化失敗。本功能需要 WebGL2，請使用下方的「3D 診斷」查看瀏覽器能力；平面配置仍可使用。');
       return cleanup;
     }
   }, [attempt]);

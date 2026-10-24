@@ -1,4 +1,4 @@
-﻿import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import WebGLDiagnostics from './features/viewer3d/WebGLDiagnosticsPanel';
 import type { ReactNode } from 'react';
 import type { Furniture, FurniturePreset, HomeProject, Point } from './domain/types';
@@ -72,11 +72,13 @@ export default function App() {
   const issueCount = new Set(issues.map(item => item.id)).size;
   const notify = useCallback((message: string) => setToast(message), []);
 
-  const changeProject = useCallback((change: (current: HomeProject) => HomeProject, group = 'form') => {
+  const furnitureGesture = useRef<{ id: string; group: string } | null>(null);
+  const gestureSequence = useRef(0);
+  const changeProject = useCallback((change: (current: HomeProject) => HomeProject, group = 'form', wholeGesture = false) => {
     const previous = projectRef.current;
     const next = { ...change(previous), updatedAt: new Date().toISOString() };
     const now = performance.now();
-    if (history.current.group !== group || now - history.current.at > 600) {
+    if (history.current.group !== group || (!wholeGesture && now - history.current.at > 600)) {
       history.current.past = [...history.current.past.slice(-29), previous];
     }
     history.current.future = []; history.current.group = group; history.current.at = now;
@@ -85,6 +87,23 @@ export default function App() {
 
   const changeFurniture = useCallback((id: string, patch: Partial<Furniture>) => {
     changeProject(p => ({ ...p, furniture: p.furniture.map(item => item.id === id ? { ...item, ...patch } : item) }), `furniture:${id}`);
+  }, [changeProject]);
+  const beginFurnitureGesture = useCallback((id: string) => {
+    furnitureGesture.current = { id, group: `drag:${++gestureSequence.current}` };
+  }, []);
+  const endFurnitureGesture = useCallback((id: string) => {
+    if (furnitureGesture.current?.id !== id) return;
+    if (history.current.group === furnitureGesture.current.group) {
+      history.current.group = ''; history.current.at = 0;
+    }
+    furnitureGesture.current = null;
+  }, []);
+  const moveFurniture = useCallback((id: string, patch: Partial<Furniture>) => {
+    const gesture = furnitureGesture.current;
+    const current = projectRef.current.furniture.find(item => item.id === id);
+    if (!gesture || gesture.id !== id || !current) return;
+    if ((patch.x === undefined || patch.x === current.x) && (patch.y === undefined || patch.y === current.y)) return;
+    changeProject(p => ({ ...p, furniture: p.furniture.map(item => item.id === id ? { ...item, ...patch } : item) }), gesture.group, true);
   }, [changeProject]);
   const historyMove = useCallback((direction: 'undo' | 'redo') => {
     const collection = direction === 'undo' ? history.current.past : history.current.future;
@@ -215,7 +234,7 @@ export default function App() {
         {storageError && <div className="storage-banner" role="alert"><span>{storageError}</span><button onClick={() => setModal('storage')}>{storageLocked ? '處理儲存狀態' : '查看處理方式'}</button></div>}
         {layoutRevisionStatus(project) === 'legacy' && <div className="revision-banner"><span>有主臥入口與底圖比例修正可供檢閱；目前方案尚未變更。</span><button className="button" onClick={openRevision}>預覽現況修正</button></div>}
         <section className="canvas-card" aria-label="空間設計畫布"><div className="canvas-topbar"><div className="view-switch" aria-label="檢視模式">{([{ id: 'plan', name: '平面配置', icon: 'plan' }, { id: 'orbit', name: '立體空間', icon: 'cube' }, { id: 'walk', name: '室內漫遊', icon: 'walk' }] as { id: View; name: string; icon: IconName }[]).map(mode => <button key={mode.id} aria-pressed={view === mode.id} className={view === mode.id ? 'selected' : ''} onClick={() => setMode(mode.id)}><Icon name={mode.icon} size={17} /><span>{mode.name}</span></button>)}</div><div className="canvas-actions"><button className="icon-button" onClick={() => historyMove('undo')} disabled={history.current.past.length === 0} aria-label="復原" title="復原 Ctrl+Z"><Icon name="undo" size={18} /></button><button className="icon-button" onClick={() => historyMove('redo')} disabled={history.current.future.length === 0} aria-label="重做" title="重做 Ctrl+Shift+Z"><Icon name="redo" size={18} /></button><span className="toolbar-divider" /><button className="text-button" onClick={() => setResetKey(n => n + 1)}>重設視角</button></div></div>
-          <div className={`canvas-viewport view-${view}`}>{view === 'plan' ? <Editor2D project={project} palette={palette} selectedId={selectedId} onSelect={setSelectedId} onFurnitureChange={changeFurniture} tool={tool} showReference={showReference} calibrationPoints={points} onCalibrationPoint={point => setPoints(previous => previous.length >= 2 ? [point] : [...previous, point])} resetKey={resetKey} /> : <ViewBoundary><Suspense fallback={<div className="view-fallback"><span className="loading-ring" /><p>正在準備立體空間…</p></div>}><Viewer3D project={project} palette={palette} selectedId={selectedId} onSelect={setSelectedId} mode={view} resetKey={resetKey} /></Suspense></ViewBoundary>}
+          <div className={`canvas-viewport view-${view}`}>{view === 'plan' ? <Editor2D project={project} palette={palette} selectedId={selectedId} onSelect={setSelectedId} onFurnitureChange={moveFurniture} onFurnitureGestureStart={beginFurnitureGesture} onFurnitureGestureEnd={endFurnitureGesture} tool={tool} showReference={showReference} calibrationPoints={points} onCalibrationPoint={point => setPoints(previous => previous.length >= 2 ? [point] : [...previous, point])} resetKey={resetKey} /> : <ViewBoundary><Suspense fallback={<div className="view-fallback"><span className="loading-ring" /><p>正在準備立體空間…</p></div>}><Viewer3D project={project} palette={palette} selectedId={selectedId} onSelect={setSelectedId} mode={view} resetKey={resetKey} /></Suspense></ViewBoundary>}
           </div><div className="canvas-bottom"><span className="scale-status"><span className="status-dot" />{project.geometryStatus === 'scaled' ? '已校正比例 · 局部尺寸待複核' : '尺寸示意 · 尚未實測校正'}</span><button className={`issue-button${issueCount ? ' has-issues' : ''}`} onClick={() => setModal('issues')}>{issueCount ? `${issueCount} 件家具需要留意` : '查看配置提示'}<Icon name="arrow" size={14} /></button></div>
         </section>
         <WebGLDiagnostics />

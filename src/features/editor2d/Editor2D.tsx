@@ -10,6 +10,8 @@ interface Editor2DProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onFurnitureChange: (id: string, patch: Partial<Furniture>) => void;
+  onFurnitureGestureStart: (id: string) => void;
+  onFurnitureGestureEnd: (id: string) => void;
   tool: 'select' | 'measure';
   showReference: boolean;
   calibrationPoints: Point[];
@@ -105,7 +107,7 @@ function FurnitureDrawing({ item, palette }: { item: Furniture; palette: StylePa
   </g>;
 }
 
-export default function Editor2D({ project, palette, selectedId, onSelect, onFurnitureChange, tool, showReference, calibrationPoints, onCalibrationPoint, resetKey }: Editor2DProps) {
+export default function Editor2D({ project, palette, selectedId, onSelect, onFurnitureChange, onFurnitureGestureStart, onFurnitureGestureEnd, tool, showReference, calibrationPoints, onCalibrationPoint, resetKey }: Editor2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 1000, height: 700 });
@@ -115,8 +117,8 @@ export default function Editor2D({ project, palette, selectedId, onSelect, onFur
   const frameRef = useRef<number | null>(null);
   const pendingCamera = useRef<Camera | null>(null);
   const pendingFurniture = useRef<{ id: string; patch: Partial<Furniture> } | null>(null);
-  const callbacks = useRef({ onFurnitureChange, onSelect, onCalibrationPoint });
-  callbacks.current = { onFurnitureChange, onSelect, onCalibrationPoint };
+  const callbacks = useRef({ onFurnitureChange, onFurnitureGestureStart, onFurnitureGestureEnd, onSelect, onCalibrationPoint });
+  callbacks.current = { onFurnitureChange, onFurnitureGestureStart, onFurnitureGestureEnd, onSelect, onCalibrationPoint };
   cameraRef.current = camera;
   const [dragging, setDragging] = useState(false);
   const idPrefix = useId().replace(/:/g, '');
@@ -169,6 +171,14 @@ export default function Editor2D({ project, palette, selectedId, onSelect, onFur
   useEffect(() => () => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
+    // Finish pending furniture work before closing its history group on unmount.
+    const update = pendingFurniture.current;
+    pendingFurniture.current = null;
+    pendingCamera.current = null;
+    const gesture = gestureRef.current;
+    gestureRef.current = null;
+    if (update) callbacks.current.onFurnitureChange(update.id, update.patch);
+    if (gesture?.furniture) callbacks.current.onFurnitureGestureEnd(gesture.furniture.id);
   }, []);
 
   const clientToWorld = useCallback((clientX: number, clientY: number): Point => {
@@ -218,6 +228,7 @@ export default function Editor2D({ project, palette, selectedId, onSelect, onFur
       moved: false,
     };
     svgRef.current?.setPointerCapture(event.pointerId);
+    if (selectedFurniture) callbacks.current.onFurnitureGestureStart(selectedFurniture.id);
   };
 
   const moveGesture = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -247,6 +258,7 @@ export default function Editor2D({ project, palette, selectedId, onSelect, onFur
       else callbacks.current.onSelect(null);
     }
     gestureRef.current = null;
+    if (gesture.furniture) callbacks.current.onFurnitureGestureEnd(gesture.furniture.id);
     setDragging(false);
     if (svgRef.current?.hasPointerCapture(event.pointerId)) svgRef.current.releasePointerCapture(event.pointerId);
   };
