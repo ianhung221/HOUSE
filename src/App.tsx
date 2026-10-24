@@ -1,4 +1,5 @@
-import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import WebGLDiagnostics from './features/viewer3d/WebGLDiagnosticsPanel';
 import type { ReactNode } from 'react';
 import type { Furniture, FurniturePreset, HomeProject, Point } from './domain/types';
 import { createHomeProject, furnitureCatalog, palettes } from './data/homeProject';
@@ -217,6 +218,7 @@ export default function App() {
           <div className={`canvas-viewport view-${view}`}>{view === 'plan' ? <Editor2D project={project} palette={palette} selectedId={selectedId} onSelect={setSelectedId} onFurnitureChange={changeFurniture} tool={tool} showReference={showReference} calibrationPoints={points} onCalibrationPoint={point => setPoints(previous => previous.length >= 2 ? [point] : [...previous, point])} resetKey={resetKey} /> : <ViewBoundary><Suspense fallback={<div className="view-fallback"><span className="loading-ring" /><p>正在準備立體空間…</p></div>}><Viewer3D project={project} palette={palette} selectedId={selectedId} onSelect={setSelectedId} mode={view} resetKey={resetKey} /></Suspense></ViewBoundary>}
           </div><div className="canvas-bottom"><span className="scale-status"><span className="status-dot" />{project.geometryStatus === 'scaled' ? '已校正比例 · 局部尺寸待複核' : '尺寸示意 · 尚未實測校正'}</span><button className={`issue-button${issueCount ? ' has-issues' : ''}`} onClick={() => setModal('issues')}>{issueCount ? `${issueCount} 件家具需要留意` : '查看配置提示'}<Icon name="arrow" size={14} /></button></div>
         </section>
+        <WebGLDiagnostics />
         <footer className="workspace-footer"><div className="material-caption"><span className={`palette-dot palette-${palette.id}`} /><span>目前風格 <b>{palette.name}</b></span></div><span>家具與材質為示意，窗景位置尚未校正</span><span className="local-caption"><Icon name="save" size={14} />本機保存 · 定期匯出</span></footer>
       </main>
     </div>
@@ -235,3 +237,4 @@ export default function App() {
     {modal === 'help' && <Modal title="慢慢把家，變成喜歡的樣子" onClose={() => setModal(null)}><div className="modal-body help-content"><p>這是家的提案空間設計工具。三房三衛的空間關係已依提供圖面描錄，長度與高度仍為示意。</p><ol><li><b>放家具：</b>從左側加入家具，在平面上拖曳，選取後可輸入尺寸與旋轉。</li><li><b>看空間：</b>平面、立體、室內漫遊共用同一份配置；電腦可以完成全部操作。</li><li><b>試風格：</b>選擇材質組合，既有格局會保留。</li><li><b>校正現況：</b>收到實測長度後，用兩點校正；不以照片比例代替實測。</li><li><b>留下備份：</b>自動保存只在目前瀏覽器。匯出 JSON 才能攜帶到其他裝置。</li></ol><p className="muted">滑鼠滾輪縮放平面；空白處拖曳平移。Ctrl/Cmd+Z 復原，Shift+Ctrl/Cmd+Z 重做。室內漫遊的操作會顯示在畫面上。</p><div className="note-card">目前沒有連線 AI、真實地理窗景或家庭雲端同步。需求可先記錄，之後在對話中一起討論。</div></div></Modal>}
   </div>;
 }
+

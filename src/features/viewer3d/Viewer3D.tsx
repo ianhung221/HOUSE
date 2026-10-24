@@ -485,13 +485,15 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    let renderer: THREE.WebGLRenderer;
+    const releases: (() => void)[] = [];
+    const cleanup = () => {
+      for (const release of releases.splice(0).reverse()) {
+        try { release(); } catch (error) { console.warn('3D cleanup step failed', error); }
+      }
+    };
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-    } catch {
-      setError('這個瀏覽器目前無法啟用 3D。請啟用硬體加速，或改用支援 WebGL 的瀏覽器；平面配置仍可使用。');
-      return;
-    }
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    releases.push(() => renderer.domElement.remove(), () => renderer.forceContextLoss(), () => renderer.dispose());
     setError('');
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -503,10 +505,12 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
     renderer.domElement.setAttribute('aria-label', '3D 空間。鳥瞰模式拖曳旋轉、滾輪縮放；室內模式拖曳轉頭，W A S D 或方向鍵移動。');
     host.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
+    releases.push(() => disposeTree(scene));
     scene.background = new THREE.Color('#e9ede7');
     scene.fog = new THREE.Fog('#e9ede7', 28, 95);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.04, 150);
     const controls = new OrbitControls(camera, renderer.domElement);
+    releases.push(() => controls.dispose());
     controls.enableDamping = true;
     controls.dampingFactor = 0.09;
     controls.minPolarAngle = 0.08;
@@ -514,6 +518,7 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
     controls.screenSpacePanning = true;
     scene.add(new THREE.HemisphereLight('#fff9ed', '#b5c0b1', 2.3));
     const sun = new THREE.DirectionalLight('#fff2d7', 3.0);
+    releases.push(() => sun.shadow.dispose());
     sun.position.set(-8, 18, 12);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -528,8 +533,10 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
     scene.add(fill);
     const runtime: Runtime = { renderer, scene, camera, controls, content: null, furniture: null, contentKey: '', furnitureKey: '', dirty: true, selection: null, selectable: [], yaw: 0, pitch: 0, pendingLook: { x: 0, y: 0 }, keys: new Set(), directions: new Set() };
     runtimeRef.current = runtime;
+    releases.push(() => { if (runtimeRef.current === runtime) runtimeRef.current = null; });
     let active = true;
     let animation = 0;
+    releases.push(() => { active = false; cancelAnimationFrame(animation); });
     let lastTime = 0;
     let lastBlocked = false;
     let drag: { id: number; startX: number; startY: number; x: number; y: number; moved: boolean } | null = null;
@@ -543,6 +550,7 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
       runtime.dirty = true;
     };
     const observer = new ResizeObserver(resize);
+    releases.push(() => observer.disconnect());
     observer.observe(host);
     resize();
     const raycaster = new THREE.Raycaster();
@@ -595,15 +603,25 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
       setError('3D 顯示連線已中斷。你的配置仍保留，可以重新載入 3D 或繼續使用平面配置。');
     };
     renderer.domElement.addEventListener('pointerdown', down);
+    releases.push(() => renderer.domElement.removeEventListener('pointerdown', down));
     renderer.domElement.addEventListener('pointermove', move);
+    releases.push(() => renderer.domElement.removeEventListener('pointermove', move));
     renderer.domElement.addEventListener('pointerup', up);
+    releases.push(() => renderer.domElement.removeEventListener('pointerup', up));
     renderer.domElement.addEventListener('pointercancel', up);
+    releases.push(() => renderer.domElement.removeEventListener('pointercancel', up));
     renderer.domElement.addEventListener('keydown', keydown);
+    releases.push(() => renderer.domElement.removeEventListener('keydown', keydown));
     renderer.domElement.addEventListener('blur', blur);
+    releases.push(() => renderer.domElement.removeEventListener('blur', blur));
     renderer.domElement.addEventListener('webglcontextlost', lost);
+    releases.push(() => renderer.domElement.removeEventListener('webglcontextlost', lost));
     window.addEventListener('keyup', keyup);
+    releases.push(() => window.removeEventListener('keyup', keyup));
     window.addEventListener('blur', blur);
+    releases.push(() => window.removeEventListener('blur', blur));
     document.addEventListener('visibilitychange', blur);
+    releases.push(() => document.removeEventListener('visibilitychange', blur));
     const animate = (time: number) => {
       if (!active) return;
       animation = requestAnimationFrame(animate);
@@ -641,28 +659,12 @@ export default function Viewer3D({ project, palette, selectedId, onSelect, mode,
       if (runtime.dirty) { renderer.render(scene, camera); runtime.dirty = false; }
     };
     animation = requestAnimationFrame(animate);
-    return () => {
-      active = false;
-      cancelAnimationFrame(animation);
-      observer.disconnect();
-      controls.dispose();
-      renderer.domElement.removeEventListener('pointerdown', down);
-      renderer.domElement.removeEventListener('pointermove', move);
-      renderer.domElement.removeEventListener('pointerup', up);
-      renderer.domElement.removeEventListener('pointercancel', up);
-      renderer.domElement.removeEventListener('keydown', keydown);
-      renderer.domElement.removeEventListener('blur', blur);
-      renderer.domElement.removeEventListener('webglcontextlost', lost);
-      window.removeEventListener('keyup', keyup);
-      window.removeEventListener('blur', blur);
-      document.removeEventListener('visibilitychange', blur);
-      disposeTree(scene);
-      sun.shadow.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      renderer.domElement.remove();
-      if (runtimeRef.current === runtime) runtimeRef.current = null;
-    };
+    return cleanup;
+    } catch {
+      cleanup();
+      setError('3D ???????????????3D ????????? WebGL2??????????');
+      return cleanup;
+    }
   }, [attempt]);
 
   useEffect(() => {

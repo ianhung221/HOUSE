@@ -1,0 +1,6 @@
+.webgl-diagnostics { margin: 12px 0; padding: 12px 16px; border: 1px solid #dce1d5; border-radius: 8px; color: #495b40; background: #f9faf5; font-size: 13px; }
+.webgl-diagnostics summary { cursor: pointer; }
+.webgl-diagnostics p { line-height: 1.7; }
+.webgl-diagnostics label { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 10px 0; }
+.webgl-diagnostics select, .webgl-diagnostics button { padding: 8px; max-width: 100%; margin: 4px; }
+.webgl-diagnostics textarea { display: block; width: 100%; min-height: 230px; box-sizing: border-box; margin-top: 10px; font: 12px/1.6 monospace; }
